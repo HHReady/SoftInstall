@@ -1,0 +1,50 @@
+---
+# Готово:
+# Добавляет пользователей coder,support, support_test, support_rti, iflexsupport
+# Каждый пользователь помечен tag
+# exclusive: True - параметр заставляет зачистить файл перед добавлением параметров
+- hosts: all
+  become: yes
+  become_method: sudo
+  gather_facts: no
+
+  tasks:
+    ## support and coder
+   # - name: Создать группу coder
+   #   ansible.builtin.group:
+   #     name: coder
+   #     state: present
+   # - name: Создать пользователя coder
+   #   user:
+   #     name: coder
+   #     shell: /bin/bash
+   #     group: coder
+   #     append: yes
+   #   tags: coder
+    - name: Добавить в authorized keys ключи coder
+      ansible.posix.authorized_key:
+        user: coder
+        state: present
+        key: "{{ lookup('file', 'ssh_keys/support.keys') }}"
+        exclusive: True
+      tags:
+        - support
+        - update_key
+    - name: Создать пользователя support
+      user:
+        name: support
+        shell: /bin/bash
+        groups:
+          - wheel
+        append: yes
+      tags: support
+    - name: Добавить в authorized keys ключи support
+      ansible.posix.authorized_key:
+        user: support
+        state: present
+        key: "{{ lookup('file', 'ssh_keys/support.keys') }}"
+        exclusive: True
+      tags:
+        - support
+        - update_key
+    ## END support

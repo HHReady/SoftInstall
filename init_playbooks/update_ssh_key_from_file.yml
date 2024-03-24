@@ -1,0 +1,18 @@
+---
+- hosts: all
+  become: yes
+  become_method: sudo
+  gather_facts: no
+  vars:
+    keys_file: tsfeipsupport.keys
+    new_user: ansible_user
+
+  tasks:
+    - name: Добавить в authorized keys ключи "{{ new_user }}"
+      ansible.posix.authorized_key:
+        user: "{{ new_user }}"
+        state: present
+        key: "{{ lookup('file', 'ssh_keys/"{{ keys_file }}"') }}"
+        exclusive: True
+      tags:
+        - update_key

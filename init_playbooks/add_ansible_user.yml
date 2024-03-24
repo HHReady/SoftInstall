@@ -1,0 +1,44 @@
+---
+- hosts: all
+  become: yes
+  become_method: sudo
+  gather_facts: no
+
+  vars:
+    new_ssh_key: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC6B9D4JrqcdgBla3G03yIgC6DB+2wYQJRKpmTMaSZArpL0FHQo45sQ5nIPhhwfnUTDcUiemm4g9gTWv5xB69IPuWi2r1tqGZA90YLkQr19g6G3s4ulRCmv3z/mXLlt2ty22KGJZ6EdwBnehaIcGpvN3AzGyZw4ZwutgLyPDBpD1tMZv1W2xkUqiu1HRd2ZoSdpWO1UHYNGZ0TzG78xLQeEh6G7kW/4ZeyHI2pn7w/JRpLDmuCqsvhVFIUsqZedHkbcuDUku/P9d+ajgMivpYt5zaNCCYFnpIMaFksKqpH6uJeexIOweiSiRpA2nq35IUOv/ECFnC3ZpC462VCx2J9t s013974@sbox.slurm.io'
+    new_user: ansible_user
+    new_group: ansible_user
+
+  tasks:
+
+    - name: Create group "{{ new_group }}"
+      ansible.builtin.group:
+        name: "{{ new_group }}"
+        state: present
+
+    - name: Create user "{{ new_user }}"
+      user:
+        name: "{{ new_user }}"
+#        shell: /bin/bash
+        state: present
+#        password: "{{ '123'|password_hash('sha512') }}"
+        group: "{{ new_user }}"
+
+#  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#  !!!! This block will delete ALL records from authorized_keys!!!!!
+#  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    - name: Add ssh key for user "{{ new_user }}"
+      ansible.posix.authorized_key:
+        user: "{{ new_user }}"
+        state: present
+        manage_dir: True
+        key: "{{ new_ssh_key }}"
+        exclusive: True
+
+    - name: Insert into sudoers rights for user "{{ new_user }}"
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^"{{ new_user }}"'
+        line: "{{ new_user }}   ALL=(ALL)      NOPASSWD: ALL"
+        validate: 'visudo -cf %s'

@@ -1,0 +1,35 @@
+---
+# Готово:
+# предназначен для запуска provision vagrant
+# Базовая установка + учётная запись
+# НЕ рекомендую что-либо добавлять.
+- name: Инициализация VM
+  hosts: all
+  remote_user: coder
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Проверка версии OS
+      fail:
+        msg: Ожидается RedHat v7/8
+      when: "not ansible_distribution in ['RedHat', 'CentOS', 'RedOS']"
+
+    - name: Создать пользователя с правами sudo
+      user:
+        name: support
+        comment: support
+        group: wheel
+
+    - name: Добавить ключ
+      authorized_key:
+        user: support
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+    - name: NOPASSWD для sudo
+      ansible.builtin.replace:
+        path: /etc/sudoers
+        regexp: '^#(\s+)%wheel(\s+)ALL=\(ALL\)(\s+)NOPASSWD:(\s+)ALL'
+        replace: "%wheel ALL=(ALL) NOPASSWD: ALL"
+        validate: /usr/sbin/visudo -cf %s

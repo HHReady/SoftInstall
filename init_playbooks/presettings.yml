@@ -1,0 +1,61 @@
+---
+# Готово
+# Типовая настройка сервера
+# комплект програм
+- name: Предварительная настройка VM
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+  #  NEXUS_REPO: http://10.28.88.100:8081/repository/rpm-offline-packages/
+    PACKAGES:
+      # - libstdc++.so.5
+      # - glibc.i686
+      - compat-libstdc++-33.x86_64
+      - dos2unix
+      - ksh
+      - mc
+      - mlocate
+      - nss-softokn-freebl.x86_64
+      - pam-devel.x86_64
+      - sysstat
+      - telnet
+      - zabbix-agent
+
+  tasks:
+    - name: Проверка версии OS
+      fail:
+        msg: Ожидается RedHat v7/8
+      when: "not ansible_distribution in ['RedHat', 'CentOS']"
+
+    - name: Установить timezone to Europe/Moscow
+      community.general.timezone:
+        name: Europe/Moscow
+
+    - name: Добавить Nexus репозиторий
+      yum_repository:
+        name: Nexus_local
+        description: Nexus local repo
+        file: nexus_repo
+        #baseurl: "{{ NEXUS_REPO }}"
+        gpgcheck: no
+
+    # - name: Update all packages
+    #   yum:
+    #     name: "*"
+    #     state: latest
+
+    - name: Установка рабочих утилит presettings
+      yum:
+        name: "{{ PACKAGES }}"
+
+    - name: Остановка Firewalld
+      ansible.builtin.systemd:
+        name: firewalld
+        state: stopped
+
+    - name: Удалить из автозапуска
+      ansible.builtin.systemd:
+        name: firewalld
+        enabled: no
